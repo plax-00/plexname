@@ -32,8 +32,16 @@ int matching_substring(regex_t * regex, char * search_str, char * buffer) {
     return 0;
 }
 
-char * get_title() {
+int get_title(char * buffer) {
+    // Gets title from parent directory's parent directory's  
+    // name and writes it to buffer
+    char * cwd = getcwd(NULL, 0);
+    char * title = basename(dirname(cwd));
 
+    strcpy(buffer, title);
+    free(cwd);
+    
+    return 0;
 }
 
 int get_season(char * buffer) {
@@ -74,6 +82,7 @@ int main(int argc, char * argv[]) {
         switch (option) {
             case 't':
                 strcpy(title, optarg);
+                tflag = 1;
                 break;
             case 's':
                 strcpy(season, optarg);
@@ -95,8 +104,7 @@ int main(int argc, char * argv[]) {
             exit(1);
         }
     }
-    printf("Season: %s\n", season);
-    // if (!tflag) strcpy(title, get_title());
+    if (!tflag) get_title(title);
 
 
     // Compiling regex to match episode number and file extension
@@ -134,13 +142,23 @@ int main(int argc, char * argv[]) {
         char * newname;
 
         result = matching_substring(&regex_ep, ptr->fts_name, episode);
-        if(result) fprintf(stderr, "No match: %s\n", ptr->fts_name);
+        if(result) {
+            fprintf(stderr, "No match: %s\n", ptr->fts_name);
+            ptr = ptr->fts_link;
+            continue;
+        }
         
         result = matching_substring(&regex_ext, ptr->fts_name, file_ext);
 
-        asprintf(&newname, "%s s%se%s.mkv", title, season, episode);
+        asprintf(&newname, "%s s%se%s.%s", title, season, episode, file_ext);
         rename(ptr->fts_name, newname);
-        if (vflag) printf("Renamed %s to %s\n", ptr->fts_name, newname);
+        if (vflag) {
+            if (!strcmp(ptr->fts_name, newname)) {
+                printf("No change: %s\n", ptr->fts_name);
+            } else {
+                printf("Renamed %s to %s\n", ptr->fts_name, newname);
+            }
+        }
 
         ptr = ptr->fts_link;
 
