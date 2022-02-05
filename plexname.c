@@ -6,8 +6,9 @@
 #include <regex.h>
 #include <fts.h>
 #include <string.h>
-#include <errno.h>
+#include <stdbool.h>
 #include <libgen.h>
+
 
 void print_usage() {
     puts("usage: plexname -t [title] -s [season #]");
@@ -72,24 +73,34 @@ int get_season(char * buffer) {
 int main(int argc, char * argv[]) {
     // Processing options
     char title[200]; 
-    int tflag = 0;
+    bool tflag = false;
     char season[10];
-    int sflag = 0;
-    int vflag = 0;
+    bool sflag = false;
+    bool eflag = false;
+    char ep_pattern[100];
+    bool vflag = false;
+    bool mflag = false;
     int option;
 
-    while ((option = getopt(argc, argv, "t:s:v")) != -1) {
+    while ((option = getopt(argc, argv, "t:s:e:vm")) != -1) {
         switch (option) {
             case 't':
                 strcpy(title, optarg);
-                tflag = 1;
+                tflag = true;
                 break;
             case 's':
                 strcpy(season, optarg);
-                sflag = 1;
+                sflag = true;
+                break;
+            case 'e':
+                strcpy(ep_pattern, optarg);
+                eflag = true;
                 break;
             case 'v':
-                vflag = 1;
+                vflag = true;
+                break;
+            case 'm':
+                mflag = true; 
                 break;
             default:
                 print_usage();
@@ -106,13 +117,24 @@ int main(int argc, char * argv[]) {
     }
     if (!tflag) get_title(title);
 
+    if (mflag) {
+        if (!(sflag && tflag)) {
+            print_usage();
+            exit(1);
+        }
+
+    }
+
 
     // Compiling regex to match episode number and file extension
     regex_t regex_ep;
     regex_t regex_ext;
     int result;
 
-    result = regcomp(&regex_ep, "[sS][0-9]{2}\\W*[eE]([0-9]{2})", REG_EXTENDED);
+    if (!eflag) {
+        strcpy(ep_pattern, "[sS][0-9]{2}\\W*[eE]([0-9]{2})");
+    }
+    result = regcomp(&regex_ep, ep_pattern, REG_EXTENDED);
     if (result) {
         fprintf(stderr, "error: Could not compile regex.");
         exit(1);
