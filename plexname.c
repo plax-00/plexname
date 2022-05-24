@@ -8,6 +8,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <libgen.h>
+#include <sys/stat.h>
 
 
 void print_usage() {
@@ -74,15 +75,22 @@ int main(int argc, char * argv[]) {
     // Processing options
     char title[200]; 
     bool tflag = false;
+
     char season[10];
     bool sflag = false;
-    bool eflag = false;
+
     char ep_pattern[100];
-    bool vflag = false;
+    bool eflag = false;
+
+    char library_path[100];
+    char * newpath;
     bool mflag = false;
+
+    bool vflag = false;
+
     int option;
 
-    while ((option = getopt(argc, argv, "t:s:e:vm")) != -1) {
+    while ((option = getopt(argc, argv, "t:s:e:m:v")) != -1) {
         switch (option) {
             case 't':
                 strcpy(title, optarg);
@@ -96,11 +104,12 @@ int main(int argc, char * argv[]) {
                 strcpy(ep_pattern, optarg);
                 eflag = true;
                 break;
+            case 'm':
+                strcpy(library_path, optarg);
+                mflag = true; 
+                break;
             case 'v':
                 vflag = true;
-                break;
-            case 'm':
-                mflag = true; 
                 break;
             default:
                 print_usage();
@@ -111,18 +120,31 @@ int main(int argc, char * argv[]) {
     if (!sflag) {
         int result = get_season(season);
         if (result) {
-            fprintf(stderr, "error: Unable to determine season number");
+            fprintf(stderr, "Error: Unable to determine season number\n");
             exit(1);
+        } else {
+            sflag = true;
         }
     }
+
     if (!tflag) get_title(title);
 
     if (mflag) {
         if (!(sflag && tflag)) {
-            print_usage();
+            puts("To use the -m option you must specify the title and season with -t and -s.");
             exit(1);
         }
+        char * title_dir;
+        asprintf(&title_dir, "%s/%s/", library_path, title);
+        mkdir(title_dir, 0755);
 
+        asprintf(&newpath, "%s/%s/Season %s/", library_path, title, season);
+        mkdir(newpath, 0755);
+
+        free(title_dir);
+    } else {
+        newpath = malloc(2);
+	strcpy(newpath, "");
     }
 
 
@@ -172,7 +194,7 @@ int main(int argc, char * argv[]) {
         
         result = matching_substring(&regex_ext, ptr->fts_name, file_ext);
 
-        asprintf(&newname, "%s s%se%s.%s", title, season, episode, file_ext);
+        asprintf(&newname, "%s%s s%se%s.%s", newpath, title, season, episode, file_ext);
         rename(ptr->fts_name, newname);
         if (vflag) {
             if (!strcmp(ptr->fts_name, newname)) {
@@ -190,5 +212,6 @@ int main(int argc, char * argv[]) {
 
     fts_close(ftsp);
     free(cwd);
+    free(newpath);
     regfree(&regex_ep);
 }
