@@ -35,19 +35,19 @@ int matching_substring(regex_t * regex, char * search_str, char * buffer) {
 }
 
 int get_title(char * buffer) {
-    // Gets title from parent directory's parent directory's  
+    // Gets title from parent directory's parent directory's
     // name and writes it to buffer
     char * cwd = getcwd(NULL, 0);
     char * title = basename(dirname(cwd));
 
     strcpy(buffer, title);
     free(cwd);
-    
+
     return 0;
 }
 
 int get_season(char * buffer) {
-    // Gets season number from parent directory name 
+    // Gets season number from parent directory name
     // and writes it to buffer
     char * cwd = getcwd(NULL, 0);
     char * parent = basename(cwd);
@@ -73,7 +73,7 @@ int get_season(char * buffer) {
 
 int main(int argc, char * argv[]) {
     // Processing options
-    char title[200]; 
+    char title[200];
     bool tflag = false;
 
     char season[10];
@@ -106,7 +106,7 @@ int main(int argc, char * argv[]) {
                 break;
             case 'm':
                 strcpy(library_path, optarg);
-                mflag = true; 
+                mflag = true;
                 break;
             case 'v':
                 vflag = true;
@@ -144,7 +144,7 @@ int main(int argc, char * argv[]) {
         free(title_dir);
     } else {
         newpath = malloc(2);
-	strcpy(newpath, "");
+        strcpy(newpath, "");
     }
 
 
@@ -191,7 +191,7 @@ int main(int argc, char * argv[]) {
             ptr = ptr->fts_link;
             continue;
         }
-        
+
         result = matching_substring(&regex_ext, ptr->fts_name, file_ext);
 
         asprintf(&newname, "%s%s s%se%s.%s", newpath, title, season, episode, file_ext);
